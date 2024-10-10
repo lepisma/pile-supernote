@@ -14,7 +14,7 @@ import re
 import json
 import os
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 async def download_file(url: str, output_path: str):
