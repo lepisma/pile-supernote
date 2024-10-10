@@ -17,7 +17,7 @@ import os
 __version__ = "0.1.0"
 
 
-async def download_file(session: aiohttp.ClientSession, url: str, output_path: str):
+async def download_file(url: str, output_path: str):
     # Supernote links don't allow streaming downloads so we can't do much beyond
     # what wget can do.
     proc = await asyncio.create_subprocess_exec("wget", "-O", output_path, url, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
@@ -58,7 +58,7 @@ async def worker(q, session, root_url, semaphore, output_dir):
         else:
             async with semaphore:
                 filepath = os.path.join(parent_dir, item["name"])
-                await download_file(session, item_url, filepath)
+                await download_file(item_url, filepath)
                 print(f"Downloaded {item['name']} to {filepath}")
 
         q.task_done()
