@@ -10,7 +10,6 @@ Options:
 from docopt import docopt, printable_usage
 import aiohttp
 import asyncio
-import aiofiles
 import re
 import json
 import os
@@ -18,10 +17,11 @@ import os
 __version__ = "0.1.0"
 
 
-async def download_file(session: aiohttp.ClientSession, url: str) -> bytes:
-    """Download file data and return bytes"""
-    async with session.get(url) as response:
-        return await response.read()
+async def download_file(session: aiohttp.ClientSession, url: str, output_path: str):
+    # Supernote links don't allow streaming downloads so we can't do much beyond
+    # what wget can do.
+    proc = await asyncio.create_subprocess_exec("wget", "-O", output_path, url, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    await proc.communicate()
 
 
 async def read_directory(session: aiohttp.ClientSession, url: str) -> list[dict]:
@@ -57,11 +57,9 @@ async def worker(q, session, root_url, semaphore, output_dir):
                 await q.put(it)
         else:
             async with semaphore:
-                filedata = await download_file(session, item_url)
                 filepath = os.path.join(parent_dir, item["name"])
-                async with aiofiles.open(filepath, "wb") as fp:
-                    await fp.write(filedata)
-                    print(f"Downloaded {item['name']} to {filepath}")
+                await download_file(session, item_url, filepath)
+                print(f"Downloaded {item['name']} to {filepath}")
 
         q.task_done()
 
