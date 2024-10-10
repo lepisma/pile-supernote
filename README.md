@@ -1,5 +1,7 @@
 # pile-supernote
 
+![GitHub Tag](https://img.shields.io/github/v/tag/lepisma/pile-supernote)
+
 Tools to integrate Supernote with my note taking ecosystem. Here are the systems
 currently available:
 
