@@ -7,7 +7,7 @@ Options:
   --url=<url>         Full URL for supernote web browsing tool
 """
 
-from docopt import docopt, printable_usage
+from docopt import docopt
 import aiohttp
 import asyncio
 import re
@@ -64,6 +64,15 @@ async def worker(q, session, root_url, semaphore, output_dir):
         q.task_done()
 
 
+
+async def is_supernote_live(session: aiohttp.ClientSession, root_url: str) -> bool:
+    try:
+        await session.get(root_url)
+        return True
+    except aiohttp.client_exceptions.ClientConnectorError:
+        return False
+
+
 async def main():
     args = docopt(__doc__, version=__version__)
     root_url = args["--url"]
@@ -74,6 +83,9 @@ async def main():
     semaphore = asyncio.Semaphore(n)
 
     async with aiohttp.ClientSession() as session:
+        if not await is_supernote_live(session, root_url):
+            raise RuntimeError("Supernote doesn't seem to be running.")
+
         for it in await read_directory(session, root_url):
             await q.put(it)
 
