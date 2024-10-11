@@ -1,10 +1,12 @@
-"""Sync (one-way) supernote data via local browsing URL to provided directory.
+"""Keep syncing (one-way) supernote data via local browsing URL to provided
+directory at regular frequency.
 
 Usage:
-  supernote-sync.py <output-dir> --url=<url>
+  supernote-sync.py <output-dir> --url=<url> [--poll-interval=<poll-interval>]
 
 Options:
-  --url=<url>         Full URL for supernote web browsing tool
+  --url=<url>                          Full URL for supernote web browsing tool
+  --poll-interval=<poll-interval>      Duration (in s) to sleep between sync [default: 600]
 """
 
 from docopt import docopt
@@ -13,6 +15,7 @@ import asyncio
 import re
 import json
 import os
+from loguru import logger
 
 __version__ = "0.1.1"
 
@@ -64,40 +67,47 @@ async def worker(q, session, root_url, semaphore, output_dir):
         q.task_done()
 
 
+async def supernote_to_local(session: aiohttp.ClientSession, root_url: str, output_dir: str):
+    """Run supernote to local sync. This unconditionally downloads the
+    supernote tree structure to the local directory.
 
-async def is_supernote_live(session: aiohttp.ClientSession, root_url: str) -> bool:
-    try:
-        await session.get(root_url)
-        return True
-    except aiohttp.client_exceptions.ClientConnectorError:
-        return False
+    This overrides files with same name and path in local but doesn't delete
+    anything else that might be present in local.
+    """
+
+    n = 5
+    q = asyncio.Queue()
+    semaphore = asyncio.Semaphore(n)
+
+    for it in await read_directory(session, root_url):
+        await q.put(it)
+
+    tasks = []
+    for _ in range(n):
+        task = asyncio.create_task(worker(q, session, root_url, semaphore, output_dir))
+        tasks.append(task)
+
+    await q.join()
+
+    for task in tasks:
+        task.cancel()
 
 
 async def main():
     args = docopt(__doc__, version=__version__)
     root_url = args["--url"]
     output_dir = args["<output-dir>"]
-
-    n = 5
-    q = asyncio.Queue()
-    semaphore = asyncio.Semaphore(n)
+    poll_interval = int(args["--poll-interval"])
 
     async with aiohttp.ClientSession() as session:
-        if not await is_supernote_live(session, root_url):
-            raise RuntimeError("Supernote doesn't seem to be running.")
+        while True:
+            try:
+                await supernote_to_local(session, root_url, output_dir)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                logger.error("Can't connect to supernote")
 
-        for it in await read_directory(session, root_url):
-            await q.put(it)
-
-        tasks = []
-        for _ in range(n):
-            task = asyncio.create_task(worker(q, session, root_url, semaphore, output_dir))
-            tasks.append(task)
-
-        await q.join()
-
-        for task in tasks:
-            task.cancel()
+            logger.info(f"Polling after {poll_interval} seconds")
+            await asyncio.sleep(poll_interval)
 
 
 if __name__ == "__main__":

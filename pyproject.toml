@@ -7,4 +7,5 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.10.9",
     "docopt>=0.6.2",
+    "loguru>=0.7.2",
 ]
