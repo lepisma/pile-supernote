@@ -62,7 +62,7 @@ async def worker(q, session, root_url, semaphore, output_dir):
             async with semaphore:
                 filepath = os.path.join(parent_dir, item["name"])
                 await download_file(item_url, filepath)
-                print(f"Downloaded {item['name']} to {filepath}")
+                logger.info(f"Downloaded {item['name']} to {filepath}")
 
         q.task_done()
 
