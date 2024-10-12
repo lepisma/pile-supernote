@@ -28,10 +28,14 @@ async def convert_to_pdf(input_path: str, output_path: str):
     """Convert input .note file to output .pdf file.
     """
 
-    notebook = sn.load_notebook(input_path, policy="strict")
-    converter = PdfConverter(notebook, palette=None)
+    loop = asyncio.get_event_loop()
 
-    data = converter.convert(-1, vectorize=False, enable_link=True, enable_keyword=True)
+    def _convert(input_path: str):
+        notebook = sn.load_notebook(input_path, policy="strict")
+        converter = PdfConverter(notebook, palette=None)
+        return converter.convert(-1, vectorize=False, enable_link=True, enable_keyword=True)
+
+    data = await loop.run_in_executor(None, _convert, input_path)
 
     async with aiofiles.open(output_path, "wb") as fp:
         await fp.write(data)
