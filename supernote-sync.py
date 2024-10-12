@@ -22,7 +22,7 @@ import supernotelib as sn
 from supernotelib.converter import PdfConverter
 
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 async def convert_to_pdf(input_path: str, output_path: str):
     """Convert input .note file to output .pdf file.
