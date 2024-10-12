@@ -31,7 +31,7 @@ async def convert_to_pdf(input_path: str, output_path: str):
     notebook = sn.load_notebook(input_path, policy="strict")
     converter = PdfConverter(notebook, palette=None)
 
-    data = converter.convert(-1, vectorize=True, enable_link=True, enable_keyword=True)
+    data = converter.convert(-1, vectorize=False, enable_link=True, enable_keyword=True)
 
     async with aiofiles.open(output_path, "wb") as fp:
         await fp.write(data)
