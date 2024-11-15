@@ -8,5 +8,6 @@ currently available:
 ```shell
 # One-way sync from supernote to local using the web server in supernote
 
-supernote-sync.py <output-dir> --url=<url>
+supernote-sync.py <output-dir>
+supernote-sync.py watch <output-dir>   # Watches the local network for supernote and syncs
 ```

@@ -3,12 +3,16 @@ directory.
 
 Usage:
   supernote-sync.py <output-dir> [--url=<url>] [--no-conversion]
+  supernote-sync.py watch <output-dir> [--url=<url>] [--no-conversion] [--cooldown-interval=<cooldown-interval>]
 
 Options:
-  --url=<url>                          Full URL for supernote web browsing tool. If this is not provided,
-                                       autodiscovery is attempted.
-  --no-conversion                      Don't do any PDF or other format-appropriate conversions after
-                                       downloading
+  --url=<url>                                Full URL for supernote web browsing tool. If this is not provided,
+                                             autodiscovery is attempted.
+  --no-conversion                            Don't do any PDF or other format-appropriate conversions after
+                                             downloading
+  --cooldown-interval=<cooldown-interval>    Time to wait, in minutes, before starting the continuous watcher
+                                             again. This should be high enough or Supernote won't shut down the
+                                             server and will keep draining the battery. [default: 120]
 """
 
 from docopt import docopt
@@ -22,6 +26,7 @@ from loguru import logger
 import networkscan
 import supernotelib as sn
 from supernotelib.converter import PdfConverter
+import time
 
 
 __version__ = "0.2.0"
@@ -168,13 +173,32 @@ if __name__ == "__main__":
     should_convert = not args["--no-conversion"]
     root_url = args["--url"]
 
-    if not root_url:
-        logger.info("Auto discovering Supernote on the network")
-        # Running this outside the loop since it conflicts with an inner event loop
-        network = "192.168.0.0/24"
-        scan = networkscan.Networkscan(network)
-        scan.run()
-        root_url = asyncio.run(discover_supernote(scan.list_of_hosts_found))
-        logger.info(f"Supernote found at {root_url}")
+    if args["watch"]:
+        cooldown_interval = int(args["--cooldown-interval"])
+        while True:
+            time.sleep(1)
+            logger.info("Auto discovering Supernote on the network")
+            # Running this outside the loop since it conflicts with an inner event loop
+            network = "192.168.0.0/24"
+            scan = networkscan.Networkscan(network)
+            scan.run()
+            try:
+                root_url = asyncio.run(discover_supernote(scan.list_of_hosts_found))
+                logger.info(f"Supernote found at {root_url}")
+                asyncio.run(main(root_url, output_dir, should_convert))
+                logger.info(f"Waiting for {cooldown_interval} minutes before next sync")
+                time.sleep(cooldown_interval * 60)
+            except Exception:
+                continue
 
-    asyncio.run(main(root_url, output_dir, should_convert))
+    else:
+        if not root_url:
+            logger.info("Auto discovering Supernote on the network")
+            # Running this outside the loop since it conflicts with an inner event loop
+            network = "192.168.0.0/24"
+            scan = networkscan.Networkscan(network)
+            scan.run()
+            root_url = asyncio.run(discover_supernote(scan.list_of_hosts_found))
+            logger.info(f"Supernote found at {root_url}")
+
+        asyncio.run(main(root_url, output_dir, should_convert))
