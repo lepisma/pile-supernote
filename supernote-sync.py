@@ -1,12 +1,11 @@
 """Keep syncing (one-way) supernote data via local browsing URL to provided
-directory at regular frequency.
+directory.
 
 Usage:
-  supernote-sync.py <output-dir> --url=<url> [--poll-interval=<poll-interval>] [--note-to-pdf]
+  supernote-sync.py <output-dir> --url=<url> [--note-to-pdf]
 
 Options:
   --url=<url>                          Full URL for supernote web browsing tool
-  --poll-interval=<poll-interval>      Duration (in s) to sleep between sync [default: 600]
   --note-to-pdf                        Whether to convert all .note files to pdf after downloading
 """
 
@@ -123,18 +122,13 @@ async def main():
     args = docopt(__doc__, version=__version__)
     root_url = args["--url"]
     output_dir = args["<output-dir>"]
-    poll_interval = int(args["--poll-interval"])
     should_convert = args["--note-to-pdf"]
 
     async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                await supernote_to_local(session, root_url, output_dir, should_convert)
-            except aiohttp.client_exceptions.ClientConnectorError:
-                logger.error("Can't connect to supernote")
-
-            logger.info(f"Polling after {poll_interval} seconds")
-            await asyncio.sleep(poll_interval)
+        try:
+            await supernote_to_local(session, root_url, output_dir, should_convert)
+        except aiohttp.client_exceptions.ClientConnectorError:
+            logger.error("Can't connect to supernote")
 
 
 if __name__ == "__main__":
