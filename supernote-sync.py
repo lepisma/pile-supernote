@@ -2,10 +2,11 @@
 directory.
 
 Usage:
-  supernote-sync.py <output-dir> --url=<url> [--note-to-pdf]
+  supernote-sync.py <output-dir> [--url=<url>] [--note-to-pdf]
 
 Options:
-  --url=<url>                          Full URL for supernote web browsing tool
+  --url=<url>                          Full URL for supernote web browsing tool. If this is not provided,
+                                       autodiscovery is attempted.
   --note-to-pdf                        Whether to convert all .note files to pdf after downloading
 """
 
@@ -17,11 +18,44 @@ import re
 import json
 import os
 from loguru import logger
+import networkscan
 import supernotelib as sn
 from supernotelib.converter import PdfConverter
 
 
 __version__ = "0.2.0"
+
+
+async def is_supernote_url(session: aiohttp.ClientSession, url: str) -> bool:
+    try:
+        await read_directory(session, url)
+        return True
+    except Exception:
+        return False
+
+
+async def discover_supernote(hosts: list[str]) -> str:
+    """Discover Supernote with local browsing enabled on the network.
+
+    We assume the server has opened 8089 port, on which we do a simple
+    validation.
+    """
+
+    logger.debug(f"Scanning {len(hosts)} hosts: {hosts}")
+
+    async with aiohttp.ClientSession() as session:
+        port = 8089
+        tasks = [is_supernote_url(session, f"http://{host}:{port}") for host in hosts]
+
+        results = await asyncio.gather(*tasks)
+
+    idx, result = max(enumerate(results), key=lambda it: it[1])
+
+    if result is False:
+        raise RuntimeError("Supernote was not found on the network")
+
+    return f"http://{hosts[idx]}:{port}"
+
 
 async def convert_to_pdf(input_path: str, output_path: str):
     """Convert input .note file to output .pdf file.
@@ -118,12 +152,7 @@ async def supernote_to_local(session: aiohttp.ClientSession, root_url: str, outp
         task.cancel()
 
 
-async def main():
-    args = docopt(__doc__, version=__version__)
-    root_url = args["--url"]
-    output_dir = args["<output-dir>"]
-    should_convert = args["--note-to-pdf"]
-
+async def main(root_url: str, output_dir: str, should_convert: bool):
     async with aiohttp.ClientSession() as session:
         try:
             await supernote_to_local(session, root_url, output_dir, should_convert)
@@ -132,4 +161,19 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    args = docopt(__doc__, version=__version__)
+
+    output_dir = args["<output-dir>"]
+    should_convert = args["--note-to-pdf"]
+    root_url = args["--url"]
+
+    if not root_url:
+        logger.info("Auto discovering Supernote on the network")
+        # Running this outside the loop since it conflicts with an inner event loop
+        network = "192.168.0.0/24"
+        scan = networkscan.Networkscan(network)
+        scan.run()
+        root_url = asyncio.run(discover_supernote(scan.list_of_hosts_found))
+        logger.info(f"Supernote found at {root_url}")
+
+    asyncio.run(main(root_url, output_dir, should_convert))

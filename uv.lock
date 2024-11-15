@@ -266,6 +266,14 @@ wheels = [
 ]
 
 [[package]]
+name = "networkscan"
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/de/2cc3af6dcf040a46c81d6d0697d1acbb77a19fb72005576676f6ab576d46/networkscan-1.0.9-py3-none-any.whl", hash = "sha256:07344e5e5b2d7afaf5703c0ea475d33a9d3b568f23e2cc3611ffa957e4cc91b9", size = 13007 },
+]
+
+[[package]]
 name = "numpy"
 version = "2.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -303,13 +311,14 @@ wheels = [
 
 [[package]]
 name = "pile-supernote"
-version = "0.1.1"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
     { name = "docopt" },
     { name = "loguru" },
+    { name = "networkscan" },
     { name = "supernotelib" },
 ]
 
@@ -319,6 +328,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.10.9" },
     { name = "docopt", specifier = ">=0.6.2" },
     { name = "loguru", specifier = ">=0.7.2" },
+    { name = "networkscan", specifier = ">=1.0.9" },
     { name = "supernotelib", git = "https://github.com/jya-dev/supernote-tool/?rev=3ded7d9" },
 ]
 
