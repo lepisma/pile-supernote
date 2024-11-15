@@ -2,12 +2,13 @@
 directory.
 
 Usage:
-  supernote-sync.py <output-dir> [--url=<url>] [--note-to-pdf]
+  supernote-sync.py <output-dir> [--url=<url>] [--no-conversion]
 
 Options:
   --url=<url>                          Full URL for supernote web browsing tool. If this is not provided,
                                        autodiscovery is attempted.
-  --note-to-pdf                        Whether to convert all .note files to pdf after downloading
+  --no-conversion                      Don't do any PDF or other format-appropriate conversions after
+                                       downloading
 """
 
 from docopt import docopt
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     args = docopt(__doc__, version=__version__)
 
     output_dir = args["<output-dir>"]
-    should_convert = args["--note-to-pdf"]
+    should_convert = not args["--no-conversion"]
     root_url = args["--url"]
 
     if not root_url:
