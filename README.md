@@ -9,4 +9,4 @@ currently available:
 # One-way sync from supernote to local using the web server in supernote
 
 supernote-sync.py <output-dir> --url=<url>
-
+```
