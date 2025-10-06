@@ -1,0 +1,4 @@
+;; -*- mode: emacs-lisp -*-
+
+(("./supernote-sync.py" . "^__version__ = \"\\(.*?\\)\"")
+ ("./pyproject.toml" . "^version = \"\\(.*?\\)\"$"))
