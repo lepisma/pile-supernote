@@ -1,3 +1,5 @@
+> Development for this project has moved to sourcehut [here](https://git.sr.ht/~lepisma/pile-supernote). This repository is now in a read-only state.
+
 # pile-supernote
 
 ![GitHub Tag](https://img.shields.io/github/v/tag/lepisma/pile-supernote)
